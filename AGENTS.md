@@ -1,5 +1,15 @@
 # Global guidance
 
+## Standing delegation authorization
+
+This file is the user's **standing, durable authorization** to use bounded subagent delegation in this workspace. You do **not** need a fresh, per-turn user message saying "use subagents" or "delegate this" before spawning subagents that this policy mandates. The workflow below is the authorization, not just a description of a nice-to-have.
+
+Concretely, you are authorized and expected to spawn subagents autonomously (within `agents.max_threads` and `agents.max_depth`) whenever this policy calls for it, including the `explorer` interview phase, `worker` implementation units, and the independent `reviewer` validation pass. Treating "the user didn't explicitly ask this turn" as a reason to absorb delegated work into the main thread is a policy violation, not a safe default. If you believe a specific step should not be delegated (security-sensitive, high-blast-radius, or truly cheaper inline), say so and proceed; do not silently fall back to main-thread work.
+
+This standing authorization covers bounded delegation as scoped by this file. It does **not** authorize delegated commits, pushes, deploys, secrets handling, or other high-blast-radius actions unless the user asks for those explicitly at the point of action. When in doubt about scope, delegate the read/analysis/review and keep the destructive action in the main thread with an explicit ask.
+
+## The orchestration pipeline
+
 **The pipeline for substantial work:** a Codex subagent grills the orchestrator (~5 rounds) -> plan/PRD -> the orchestrator decomposes into specs -> dispatch to Codex worker subagents for implementation -> an **independent Codex reviewer subagent** validates -> the orchestrator arbitrates and integrates. The main thread orchestrates throughout; subagents do the interviewing, the building, and the validating.
 
 ## Division of labor: the main thread orchestrates, subagents execute

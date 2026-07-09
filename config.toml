@@ -38,6 +38,12 @@ project_doc_max_bytes = 65536
 # model in AGENTS.md.
 multi_agent = true
 
+# Opt into the multi_agent_v2 tool layer to override the default "only spawn
+# subagents when the user explicitly asks" gate (openai/codex#16996). See the
+# [features.multi_agent_v2] table below for the standing-delegation usage hint.
+# NOTE: relies on an undocumented knob; may be removed/renamed in a future
+# build. If spawning regresses, re-check #16996/#18105.
+
 # Speed up repeated commands by snapshotting the shell environment.
 shell_snapshot = true
 
@@ -55,6 +61,22 @@ fast_mode = true
 
 # Enable personality selection controls.
 personality = true
+
+# Override the default "only spawn subagents when the user explicitly asks"
+# gate (openai/codex#16996). With this hint, Codex treats repo/workflow
+# instructions (AGENTS.md) as the user's standing delegation policy and may
+# spawn bounded subagents autonomously when AGENTS.md calls for them, without a
+# fresh per-turn authorization. NOTE: relies on an undocumented knob; may be
+# removed/renamed in a future build. If spawning regresses, re-check #16996.
+[features.multi_agent_v2]
+usage_hint_enabled = true
+usage_hint_text = '''
+Use `spawn_agent` autonomously when delegation materially improves the task.
+
+Repository or workspace instructions such as AGENTS.md may define when and how delegation is appropriate. Treat those instructions as the user's standing delegation policy for the workspace; they count as explicit user authorization to spawn the subagents that workflow requires. Do not require a separate live user request before spawning subagents that AGENTS.md mandates.
+
+Keep delegation bounded: respect agents.max_threads, agents.max_depth, and the role guidance in AGENTS.md. Prefer project-scoped custom agents from .codex/agents/*.toml over generic workers. Do not delegate edits, commits, PR creation, deploys, secrets, or other high-blast-radius work unless AGENTS.md or the user explicitly authorizes it for that step.
+'''
 
 # Agents (multi-agent roles and limits)
 [agents]
