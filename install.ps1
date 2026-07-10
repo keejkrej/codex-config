@@ -3,8 +3,36 @@
 # files into ~/.codex so the main thread orchestrates Codex subagents.
 [CmdletBinding()]
 param(
-  [string]$CodexDir = (Join-Path $HOME ".codex")
+  [string]$CodexDir = (Join-Path $HOME ".codex"),
+  [switch]$NoElevate
 )
+
+# ---------------------------------------------------------------------------
+# Self-elevation: if not running as admin, relaunch with -Verb RunAs (UAC
+# prompt). If the user denies the UAC prompt, continue non-elevated and fall
+# back to copy mode for symlinks.
+# ---------------------------------------------------------------------------
+if (-not $NoElevate) {
+  $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+  if (-not $isAdmin) {
+    $psi = [System.Diagnostics.ProcessStartInfo]::new()
+    $psi.FileName = (Get-Process -Id $PID).Path
+    $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    if ($PSBoundParameters.ContainsKey("CodexDir")) {
+      $psi.Arguments += " -CodexDir `"$CodexDir`""
+    }
+    $psi.Verb = "RunAs"
+    $psi.UseShellExecute = $true
+    $psi.WorkingDirectory = $PSScriptRoot
+    try {
+      $proc = [System.Diagnostics.Process]::Start($psi)
+      $proc.WaitForExit()
+      exit $proc.ExitCode
+    } catch {
+      Write-Host "!! UAC denied or unavailable ($($_.Exception.Message)); continuing non-elevated (symlinks will fall back to copies)." -ForegroundColor Yellow
+    }
+  }
+}
 
 $ErrorActionPreference = "Stop"
 $Here = $PSScriptRoot
