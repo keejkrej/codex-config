@@ -1,18 +1,5 @@
 # Global guidance
 
-## Two orchestration modes
-
-There are only two setups. **This file governs Mode B.**
-
-| | Orchestrator (plans, judges, integrates) | Execution layer |
-|--|--|--|
-| **Mode A** (`claude-config` / `CLAUDE.md` — Claude Code) | Claude model, main thread | Codex subagents (implement + adversarial review) |
-| **Mode B** (this file — Codex CLI) | Codex model, main thread | Codex subagents (`explorer`, `worker`, `reviewer`) |
-
-The planning pipeline, matt-skills flow, and `.scratch/` artifacts are **the same** in both modes. What changes is who holds the orchestrator seat: here, one Codex model on the main thread spawns `explorer` / `worker` / `reviewer` subagents for the full stack; in Mode A, a Claude model orchestrates and dispatches Codex for build and review only.
-
-Pick one mode per session. Don't mix orchestrators on the same effort — both can read the same committed `.scratch/<effort-slug>/`, but only one model should own the main thread.
-
 ## Standing delegation authorization
 
 This file is the user's **standing, durable authorization** to use bounded subagent delegation in this workspace. You do **not** need a fresh, per-turn user message saying "use subagents" or "delegate this" before spawning subagents that this policy mandates. The workflow below is the authorization, not just a description of a nice-to-have.
@@ -23,17 +10,15 @@ This standing authorization covers bounded delegation as scoped by this file. It
 
 ## The orchestration pipeline
 
-**The pipeline for substantial work (both modes):** route with `ask-matt` when unsure → (if foggy/huge) `wayfinder` clears decisions ticket-by-ticket → a subagent grills the orchestrator (~5 rounds) when the idea fits one session → `to-spec` writes a local spec → `to-tickets` writes local tracer-bullet tickets with blocking edges → dispatch each frontier ticket to Codex workers → an **independent Codex reviewer** validates → the orchestrator arbitrates and integrates. **All planning artifacts stay local markdown in the workspace — never publish to GitHub or any external issue tracker.**
+**The pipeline for substantial work:** route with `ask-matt` when unsure → (if foggy/huge) `wayfinder` clears decisions ticket-by-ticket → an `explorer` subagent grills the orchestrator (~5 rounds) when the idea fits one session → `to-spec` writes a local spec → `to-tickets` writes local tracer-bullet tickets with blocking edges → dispatch each frontier ticket to a `worker` subagent → an **independent `reviewer` subagent** validates → the main thread arbitrates and integrates. The main thread orchestrates throughout; subagents run the skills, the building, and the validating. **All planning artifacts stay local markdown in the workspace — never publish to GitHub or any external issue tracker.**
 
-**In Mode B:** the Codex main thread is the orchestrator. `explorer` runs skills and the planning interview; `worker` implements; `reviewer` validates adversarially.
+**Resuming work:** if `.scratch/<effort-slug>/` already exists in the repo, load it first. Read `spec.md`, `tickets.md`, or `map.md` to find the frontier and continue — don't re-plan from scratch.
 
-**Resuming work:** if `.scratch/<effort-slug>/` already exists in the repo, load it first. Read `spec.md`, `tickets.md`, or `map.md` to find the frontier and continue — don't re-plan from scratch. Works across modes: a plan started in Mode A can be continued in Mode B and vice versa.
+## Division of labor: the main thread orchestrates, subagents execute
 
-## Division of labor: Codex orchestrates Codex (Mode B)
+Default operating model for substantial coding work: **the Codex main thread is the orchestrator and validator; Codex subagents do the bulk implementation, exploration, and adversarial review.**
 
-Default operating model for substantial coding work: **the Codex model on the main thread is the orchestrator and validator; Codex subagents do the bulk implementation, exploration, and adversarial review.**
-
-Subagents are fast and strong at focused, well-specified work. The orchestrator main thread is stronger at planning, decomposition, cross-file reasoning, and judgment. Play to both.
+Subagents are fast and strong at focused, well-specified work. The main thread is stronger at planning, decomposition, cross-file reasoning, and judgment. Play to both.
 
 **The orchestrator's job (keep this in the main thread):**
 - Understand the request; explore the codebase enough to scope the work.
