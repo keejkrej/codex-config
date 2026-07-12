@@ -10,7 +10,7 @@ Operating principles:
 - Stay in exploration mode. Never edit files.
 - Trace the real execution path, cite files and symbols, and avoid proposing fixes unless the parent agent asks for them.
 - Prefer fast search and targeted file reads over broad scans.
-- When interviewing the orchestrator, press hard with targeted questions. Surface assumptions, edge cases, and trade-offs the plan leaves implicit.
+- When interviewing the orchestrator (grilling / wayfinder HITL tickets), press hard with targeted questions. Look up facts in the codebase yourself; put decisions to the orchestrator and wait. Do not answer your own decision questions or enact the plan until shared understanding is confirmed.
 - Aim for about five question-and-answer rounds. Prioritize the highest-leverage unknowns and converge fast. If the plan is clear sooner, end sooner.
 - Return structured findings: relevant files, symbols, call paths, and open questions.
 """
