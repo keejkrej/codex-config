@@ -1,73 +1,12 @@
-# Codex example configuration (config.toml)
-#
-# Applies the orchestration model: the main thread orchestrates, Codex
-# subagents execute. This config enables multi-agent collaboration and sets
-# sane defaults for an interactive workflow. Install.sh symlinks it into
-# ~/.codex/config.toml.
+# Orchestration essentials merged into ~/.codex/config.toml by install.sh.
+# Codex owns the live config; this file only carries settings required for the
+# AGENTS.md orchestration model.
 
-# Core model selection. "gpt-5.5" is the current recommended default.
-model = "gpt-5.5"
-
-# Reasoning effort: minimal | low | medium | high | xhigh
-model_reasoning_effort = "high"
-
-# Communication style for supported models. Allowed values: none | friendly | pragmatic
-personality = "pragmatic"
-
-# Provider id selected from [model_providers]. Default: "openai".
-model_provider = "openai"
-
-# Approval & sandbox
-# on-request: model decides when to ask (default for interactive runs).
-approval_policy = "on-request"
-
-# workspace-write: Codex can edit files in the workspace root but nothing else.
-sandbox_mode = "workspace-write"
-
-# Web search mode: disabled | cached | live. Default: "cached"
-web_search = "cached"
-
-# Project documentation controls
-# Max bytes from AGENTS.md to embed into first-turn instructions. Default: 32768
 project_doc_max_bytes = 65536
 
-# Feature flags
 [features]
-# Enable multi-agent collaboration tools (spawn_agent, send_input, resume_agent,
-# wait_agent, close_agent). Stable; on by default. Required for the orchestration
-# model in AGENTS.md.
 multi_agent = true
 
-# Opt into the multi_agent_v2 tool layer to override the default "only spawn
-# subagents when the user explicitly asks" gate (openai/codex#16996). See the
-# [features.multi_agent_v2] table below for the standing-delegation usage hint.
-# NOTE: relies on an undocumented knob; may be removed/renamed in a future
-# build. If spawning regresses, re-check #16996/#18105.
-
-# Speed up repeated commands by snapshotting the shell environment.
-shell_snapshot = true
-
-# Enable the default `shell` tool for running commands.
-shell_tool = true
-
-# Use the unified PTY-backed exec tool (stable; enabled by default except Windows).
-unified_exec = true
-
-# Enable lifecycle hooks from hooks.json or inline [hooks] config.
-hooks = true
-
-# Enable Fast mode selection and the service_tier = "fast" path.
-fast_mode = true
-
-# Enable personality selection controls.
-personality = true
-
-# Override the default "only spawn subagents when the user explicitly asks"
-# gate (openai/codex#16996). With this hint, Codex treats repo/workflow
-# instructions (AGENTS.md) as the user's standing delegation policy and may
-# spawn bounded subagents autonomously when AGENTS.md calls for them, without a
-# fresh per-turn authorization. NOTE: relies on an undocumented knob; may be
-# removed/renamed in a future build. If spawning regresses, re-check #16996.
 [features.multi_agent_v2]
 usage_hint_enabled = true
 usage_hint_text = '''
@@ -78,73 +17,12 @@ Repository or workspace instructions such as AGENTS.md may define when and how d
 Keep delegation bounded: respect agents.max_threads, agents.max_depth, and the role guidance in AGENTS.md. Prefer project-scoped custom agents from .codex/agents/*.toml over generic workers. Do not delegate edits, commits, PR creation, deploys, secrets, or other high-blast-radius work unless AGENTS.md or the user explicitly authorizes it for that step.
 '''
 
-# Agents (multi-agent roles and limits)
 [agents]
-# Maximum concurrently open agent threads. Default: 6.
-# Raise for heavy parallel fan-out; lower to conserve tokens.
 max_threads = 6
-
-# Maximum nested spawn depth. Root session starts at depth 0. Default: 1.
-# Keep at 1 unless you specifically need recursive delegation.
-# Raising this can turn broad delegation into repeated fan-out (more tokens,
-# latency, and resource use).
 max_depth = 1
-
-# Default timeout per worker for spawn_agents_on_csv jobs (seconds).
-# When unset, the tool defaults to 1800.
 job_max_runtime_seconds = 1800
 
-# Custom reviewer agent (defined in agents/reviewer.toml, loaded from
-# ~/.codex/agents/ at runtime). The [agents.<name>] table here mirrors the
-# standalone file so the role is discoverable from config.toml too.
 [agents.reviewer]
 description = "Adversarial PR reviewer focused on correctness, security, and missing tests."
 config_file = "agents/reviewer.toml"
 nickname_candidates = ["Athena", "Ada", "Artemis"]
-
-# Sandbox settings (used when sandbox_mode = "workspace-write")
-[sandbox_workspace_write]
-# Additional writable roots beyond the workspace (cwd). Default: []
-writable_roots = []
-
-# Allow outbound network access inside the sandbox. Default: false
-network_access = false
-
-# Shell environment policy for spawned processes
-[shell_environment_policy]
-# inherit: all (default) | core | none
-inherit = "all"
-
-# History
-[history]
-# save-all (default) | none
-persistence = "save-all"
-
-# TUI
-[tui]
-# Desktop notifications from the TUI.
-notifications = false
-
-# Enables welcome/status/spinner animations.
-animations = true
-
-# Show onboarding tooltips in the welcome screen.
-show_tooltips = true
-
-# Analytics
-[analytics]
-enabled = true
-
-# Feedback
-[feedback]
-enabled = true
-
-# File opener: vscode (default) | vscode-insiders | windsurf | cursor | none
-file_opener = "vscode"
-
-# Check for updates on startup. Default: true
-check_for_update_on_startup = true
-
-# Windows sandbox (Windows only)
-[windows]
-sandbox = "unelevated"

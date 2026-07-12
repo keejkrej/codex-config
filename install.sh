@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Apply Codex configuration from this repo.
-# Links the global AGENTS.md guidance, config.toml, and custom agent TOML
-# files into ~/.codex so the main thread orchestrates Codex subagents.
+# Links AGENTS.md and custom agent TOML into ~/.codex, and merges orchestration
+# essentials from config.toml into ~/.codex/config.toml (Codex owns the rest).
 set -euo pipefail
 
 CODEX_DIR="${CODEX_DIR:-$HOME/.codex}"
@@ -21,8 +21,15 @@ link_file() {
   echo "    linked $(basename "$dest")"
 }
 
-link_file "$HERE/AGENTS.md"   "$CODEX_DIR/AGENTS.md"
-link_file "$HERE/config.toml" "$CODEX_DIR/config.toml"
+merge_config_file() {
+  if [ ! -d "$HERE/node_modules/smol-toml" ]; then
+    npm install --prefix "$HERE" --omit=dev --no-fund --no-audit
+  fi
+  node "$HERE/scripts/merge_config.mjs" "$HERE/config.toml" "$CODEX_DIR/config.toml"
+}
+
+link_file "$HERE/AGENTS.md" "$CODEX_DIR/AGENTS.md"
+merge_config_file
 
 # 2. Custom agent TOML files: symlink each into ~/.codex/agents/
 for agent_file in "$HERE"/agents/*.toml; do
@@ -34,7 +41,7 @@ done
 echo
 echo "==> Done. Configuration applied:"
 echo "    ~/.codex/AGENTS.md          -> $HERE/AGENTS.md"
-echo "    ~/.codex/config.toml        -> $HERE/config.toml"
+echo "    ~/.codex/config.toml        (merged orchestration essentials from $HERE/config.toml)"
 echo "    ~/.codex/agents/*.toml      -> $HERE/agents/*.toml"
 echo
 echo "==> Verify with:"

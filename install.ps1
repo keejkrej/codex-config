@@ -1,6 +1,6 @@
 # Apply Codex configuration from this repo (Windows / PowerShell).
-# Links the global AGENTS.md guidance, config.toml, and custom agent TOML
-# files into ~/.codex so the main thread orchestrates Codex subagents.
+# Links AGENTS.md and custom agent TOML into ~/.codex, and merges orchestration
+# essentials from config.toml into ~/.codex/config.toml (Codex owns the rest).
 [CmdletBinding()]
 param(
   [string]$CodexDir = (Join-Path $HOME ".codex"),
@@ -37,6 +37,17 @@ if (-not $NoElevate) {
 $ErrorActionPreference = "Stop"
 $Here = $PSScriptRoot
 
+function Merge-ConfigFile($Essentials, $Dest) {
+  $modules = Join-Path $Here "node_modules/smol-toml"
+  if (-not (Test-Path $modules)) {
+    npm install --prefix $Here --omit=dev --no-fund --no-audit
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+  }
+  $mergeScript = Join-Path $Here "scripts/merge_config.mjs"
+  & node $mergeScript $Essentials $Dest
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+
 function Link-File($Src, $Dest) {
   $destParent = Split-Path -Parent $Dest
   if (-not (Test-Path $destParent)) { New-Item -ItemType Directory -Path $destParent -Force | Out-Null }
@@ -63,9 +74,9 @@ foreach ($d in @($CodexDir, (Join-Path $CodexDir "agents"))) {
   if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
 }
 
-# 1. Global guidance: symlink AGENTS.md and config.toml into ~/.codex
-Link-File (Join-Path $Here "AGENTS.md")   (Join-Path $CodexDir "AGENTS.md")
-Link-File (Join-Path $Here "config.toml") (Join-Path $CodexDir "config.toml")
+# 1. Global guidance: symlink AGENTS.md; merge orchestration essentials
+Link-File (Join-Path $Here "AGENTS.md") (Join-Path $CodexDir "AGENTS.md")
+Merge-ConfigFile (Join-Path $Here "config.toml") (Join-Path $CodexDir "config.toml")
 
 # 2. Custom agent TOML files: symlink each into ~/.codex/agents/
 $agentsDir = Join-Path $Here "agents"
@@ -78,7 +89,7 @@ if (Test-Path $agentsDir) {
 Write-Host ""
 Write-Host "==> Done. Configuration applied:"
 Write-Host "    ~/.codex/AGENTS.md          -> $Here\AGENTS.md"
-Write-Host "    ~/.codex/config.toml        -> $Here\config.toml"
+Write-Host "    ~/.codex/config.toml        (merged orchestration essentials from $Here\config.toml)"
 Write-Host "    ~/.codex/agents/*.toml      -> $Here\agents\*.toml"
 Write-Host ""
 Write-Host "==> Verify with:"
