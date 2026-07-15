@@ -52,9 +52,22 @@ function Link-File($Src, $Dest) {
   $destParent = Split-Path -Parent $Dest
   if (-not (Test-Path $destParent)) { New-Item -ItemType Directory -Path $destParent -Force | Out-Null }
 
+  $srcFull = (Resolve-Path $Src).Path
   if (Test-Path $Dest) {
     $item = Get-Item $Dest -Force
-    if ($item.LinkType -ne "SymbolicLink") {
+    if ($item.LinkType -eq "SymbolicLink") {
+      $target = if ($item.Target -is [array]) { $item.Target[0] } else { $item.Target }
+      # Resolve relative link targets against the dest directory
+      if (-not [System.IO.Path]::IsPathRooted($target)) {
+        $target = [System.IO.Path]::GetFullPath((Join-Path $destParent $target))
+      }
+      if ([string]::Equals($target, $srcFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Write-Host "    already linked $(Split-Path -Leaf $Dest)"
+        return
+      }
+      # Wrong target: remove so we can recreate
+      Remove-Item $Dest -Force
+    } else {
       $backup = "$Dest.bak.$([int][double]::Parse((Get-Date -UFormat %s)))"
       Move-Item $Dest $backup -Force
       Write-Host "    backed up existing $(Split-Path -Leaf $Dest)"
@@ -62,9 +75,17 @@ function Link-File($Src, $Dest) {
   }
 
   try {
-    New-Item -ItemType SymbolicLink -Path $Dest -Value $Src -ErrorAction Stop | Out-Null
+    New-Item -ItemType SymbolicLink -Path $Dest -Value $srcFull -ErrorAction Stop | Out-Null
   } catch {
-    Copy-Item $Src $Dest -Force
+    # Symlink creation failed (e.g. no admin / Developer Mode). Fall back to a real copy.
+    try {
+      if (Test-Path $Dest) { Remove-Item $Dest -Force -ErrorAction Stop }
+      Copy-Item $srcFull $Dest -Force -ErrorAction Stop
+    } catch {
+      Write-Host "!! failed to link or copy $(Split-Path -Leaf $Dest): $($_.Exception.Message)" -ForegroundColor Red
+      Write-Host "   Close any app holding the file (Codex, editors) and re-run with -NoElevate if needed." -ForegroundColor Yellow
+      throw
+    }
   }
   Write-Host "    linked $(Split-Path -Leaf $Dest)"
 }
@@ -81,8 +102,9 @@ Merge-ConfigFile (Join-Path $Here "config.toml") (Join-Path $CodexDir "config.to
 # 2. Custom agent TOML files: symlink each into ~/.codex/agents/
 $agentsDir = Join-Path $Here "agents"
 if (Test-Path $agentsDir) {
+  $codexAgents = Join-Path $CodexDir "agents"
   Get-ChildItem -Path $agentsDir -Filter *.toml | ForEach-Object {
-    Link-File $_.FullName (Join-Path $CodexDir "agents" $_.Name)
+    Link-File $_.FullName (Join-Path $codexAgents $_.Name)
   }
 }
 
