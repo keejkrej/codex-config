@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Deep-merge orchestration essentials into ~/.codex/config.toml. */
+/** Deep-merge essentials (reviewer registration + MCP servers) into ~/.codex/config.toml. */
 
 import { mkdir, readFile, writeFile, lstat, unlink } from "node:fs/promises";
 import { dirname } from "node:path";
@@ -129,7 +129,7 @@ async function main() {
 
   await mkdir(dirname(destPath), { recursive: true });
   await writeFile(destPath, dumpToml(merged), "utf8");
-  console.log(`merged orchestration essentials into ${destPath}`);
+  console.log(`merged essentials into ${destPath}`);
 }
 
 main().catch((err) => {

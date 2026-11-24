@@ -1,21 +1,8 @@
-# Orchestration essentials merged into ~/.codex/config.toml by install.sh.
-# Codex owns the live config; this file only carries settings required for the
-# AGENTS.md orchestration model.
-
-project_doc_max_bytes = 65536
+# Essentials merged into ~/.codex/config.toml by install.sh. Codex owns the live
+# config; this file only carries what the reviewer agent and the MCP servers need.
 
 [features]
 multi_agent = true
-
-[features.multi_agent_v2]
-usage_hint_enabled = true
-usage_hint_text = '''
-Use `spawn_agent` autonomously when delegation materially improves the task.
-
-Repository or workspace instructions such as AGENTS.md may define when and how delegation is appropriate. Treat those instructions as the user's standing delegation policy for the workspace; they count as explicit user authorization to spawn the subagents that workflow requires. Do not require a separate live user request before spawning subagents that AGENTS.md mandates.
-
-Keep delegation bounded: respect agents.max_threads, agents.max_depth, and the role guidance in AGENTS.md. Prefer project-scoped custom agents from .codex/agents/*.toml over generic workers. Do not delegate edits, commits, PR creation, deploys, secrets, or other high-blast-radius work unless AGENTS.md or the user explicitly authorizes it for that step.
-'''
 
 [agents]
 max_threads = 6
@@ -23,6 +10,21 @@ max_depth = 1
 job_max_runtime_seconds = 1800
 
 [agents.reviewer]
-description = "Adversarial PR reviewer focused on correctness, security, and missing tests."
+description = "Independent code reviewer; read-only. Reports findings with file:line and never modifies files."
 config_file = "agents/reviewer.toml"
 nickname_candidates = ["Athena", "Ada", "Artemis"]
+
+[mcp_servers.paper]
+command = "paper"
+args = ["mcp"]
+
+[mcp_servers.ambient]
+url = "http://127.0.0.1:8765/mcp"
+
+[mcp_servers.mobbin]
+command = "npx"
+args = ["-y", "mcp-remote", "https://api.mobbin.com/mcp"]
+
+[mcp_servers.browse]
+command = "browse"
+args = ["mcp"]
