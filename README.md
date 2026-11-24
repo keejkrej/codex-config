@@ -14,7 +14,8 @@ Portable config for [Codex CLI](https://github.com/openai/codex), copied into `~
 Nothing is linked. `install.sh` (Git Bash, macOS, Linux) and `install.ps1` (PowerShell) copy the
 files and back up anything they replace as `*.bak.<timestamp>`; re-run the installer after editing.
 Codex owns `~/.codex/config.toml` and rewrites it itself, so that one file is merged key by key
-rather than copied; keys it holds that are not listed here are left alone.
+rather than copied; keys it holds that are not listed here are left alone, so a key this repo stops
+setting has to be removed from the live file by hand.
 
 ## New machine
 
@@ -36,7 +37,8 @@ Check everything with `codex mcp list`.
 
 ## Reviewer
 
-`reviewer` is a Codex agent (`gpt-5.5`, high reasoning, `read-only` sandbox) that the main thread
+`reviewer` is a Codex agent that inherits the session model (high reasoning, `read-only` sandbox)
+and that the main thread
 spawns with `spawn_agent`; its prompt tells it to report, never fix. The read-only sandbox blocks
 build artifacts, so switch `sandbox_mode` to `workspace-write` if you want it to run test suites
 that need to write. `AGENTS.md` asks the main thread to run it on the diff before reporting any
