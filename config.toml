@@ -12,7 +12,6 @@ job_max_runtime_seconds = 1800
 [agents.reviewer]
 description = "Independent code reviewer; read-only. Reports findings with file:line and never modifies files."
 config_file = "agents/reviewer.toml"
-nickname_candidates = ["Athena", "Ada", "Artemis"]
 
 [mcp_servers.paper]
 command = "paper"

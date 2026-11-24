@@ -117,6 +117,18 @@ async function main() {
 
   const existing = await loadToml(destPath);
   const merged = deepMerge(existing, essentials);
+  const output = dumpToml(merged);
+
+  let current = null;
+  try {
+    current = await readFile(destPath, "utf8");
+  } catch {
+    // dest may not exist yet
+  }
+  if (current === output) {
+    console.log(`unchanged ${destPath}`);
+    return;
+  }
 
   try {
     await lstat(destPath);
@@ -128,7 +140,7 @@ async function main() {
   }
 
   await mkdir(dirname(destPath), { recursive: true });
-  await writeFile(destPath, dumpToml(merged), "utf8");
+  await writeFile(destPath, output, "utf8");
   console.log(`merged essentials into ${destPath}`);
 }
 
