@@ -6,8 +6,9 @@ Portable config for [Codex CLI](https://github.com/openai/codex), copied into `~
 
 | File | Purpose | Installed as |
 | --- | --- | --- |
-| `AGENTS.md` | Global instructions for every session: the Ambient memory block plus a short "review before done" rule | `~/.codex/AGENTS.md` |
+| `AGENTS.md` | Global instructions for every session: the Ambient memory block plus primary-only orchestration rules | `~/.codex/AGENTS.md` |
 | `config.toml` | Essentials merged into the live config: `multi_agent` on, the `reviewer` agent registration, and the MCP servers (paper, ambient, mobbin through `mcp-remote`, browse) | merged into `~/.codex/config.toml` |
+| `agents/worker.toml`, `agents/scout.toml` | Standalone implementation and read-only research roles | `~/.codex/agents/` |
 | `agents/reviewer.toml` | `reviewer` agent: an independent, read-only code reviewer with the same brief as the other agents' reviewers | `~/.codex/agents/reviewer.toml` |
 | `scripts/merge_config.mjs` | Deep-merges `config.toml` into `~/.codex/config.toml` and backs up the live file first; needs `npm install` in this folder | not installed |
 
@@ -35,14 +36,31 @@ do this); npm's own `npx.cmd` cannot be spawned without a shell, and the documen
 
 Check everything with `codex mcp list`.
 
-## Reviewer
+## Orchestration and roles
 
-`reviewer` is a Codex agent that inherits the session model (high reasoning, `read-only` sandbox)
-and that the main thread
-spawns with `spawn_agent`; its prompt tells it to report, never fix. The read-only sandbox blocks
-build artifacts, so switch `sandbox_mode` to `workspace-write` if you want it to run test suites
-that need to write. `AGENTS.md` asks the main thread to run it on the diff before reporting any
-non-trivial change done. If a custom agent name ever matches a built-in one, the custom agent wins.
+The primary agent coordinates rather than implementing: it delegates edits, commands and tests to
+`worker`, uses `scout` for read-only research, and has `reviewer` check non-trivial diffs.
+The primary-only rule does not apply to delegated workers: they implement and validate directly.
+There is no fixed pipeline or requirement to manufacture parallel tasks.
+
+`worker` and `scout` use the documented [standalone custom agent format](https://developers.openai.com/codex/multi-agent/):
+Codex discovers `~/.codex/agents/*.toml` files with `name`, `description` and
+`developer_instructions`. They inherit the session model, provider, permissions and MCP servers;
+no additional config registration, feature flags or permission settings are introduced here.
+The existing reviewer registration and config settings are retained.
+
+`scout` researches without writing or running side-effecting commands. `reviewer` reports
+findings rather than fixing them. These role boundaries and the primary's delegation rule are
+prompt instructions, not security boundaries, including when the session runs with `--yolo`.
+The existing reviewer file's `sandbox_mode` setting is not a guarantee of an isolated read-only
+boundary: current custom agents inherit the parent's permissions. If a custom agent name matches
+a built-in one (such as `worker`), the custom agent wins.
+
+The installers copy the entire repository `AGENTS.md`. If your live file contains personal
+instructions, merge only the `## Orchestration` section in place of the old `## Review before done`
+section, preserve the rest (including Ambient), and copy the role files into `~/.codex/agents/`.
+Existing installations need no config merge for these new standalone roles; avoid rewriting live
+settings or MCP configuration just to install them. Start a new Codex session to pick up the changes.
 
 ## Ambient memory
 
